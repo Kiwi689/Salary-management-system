@@ -17,7 +17,7 @@ public:
     ~SalaryWindow();
     Employee* m_employee;  // 当前要显示工资的员工
     void updateSalaryTable();  // 刷新工资表
-
+    void onCellChanged(int row, int column);
 //signals:
 //    void backToMain();  // 通知主窗口返回
 

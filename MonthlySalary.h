@@ -10,9 +10,18 @@ public:
 
     QString month;
     double basicSalary;
-    double postSalary;
-    double senioritySalary;
-    //其他工资待添加
+    double postSalary;//岗位工资
+    double senioritySalary;//工龄工资
+    double allowance;         // 津贴
+    double postAllowance;     // 岗贴
+    double subsidy;           // 补贴
+    double housingAllowance;  // 房贴
+    double transportAllowance;// 交通补贴
+
+    // 自动计算
+    double getGrossSalary() const;    // 应发工资（税前）
+    double getTax() const;            // 个税
+    double getNetSalary() const;      // 实发工资
 };
 
 #endif // MONTHLYSALARY_H

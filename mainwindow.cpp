@@ -4,6 +4,7 @@
 #include "employee.h"
 #include "monthlysalary.h"
 #include "salarywindow.h"
+#include <QToolBar>
 #include <QMessageBox>
 #include <QDebug>
 #include <QTableWidgetItem> // 需要这个来操作表格项
@@ -23,32 +24,41 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
 
+    // 工具栏
+    QToolBar *toolBar = addToolBar(tr("主工具栏"));
+    toolBar->setFixedHeight(60);
+    toolBar->setStyleSheet("QToolButton { font-size: 10pt; }");
 
-    // +++ 初始化表格（窗户） +++
-    // 设置表格的列数和表头
-    ui->tableWidget->setColumnCount(5); // 设置5列：工号、姓名、年龄、电话、住址
+    // 表格
+    ui->tableWidget->setColumnCount(5);
     QStringList headers;
     headers << "工号" << "姓名" << "年龄" << "电话" << "住址";
     ui->tableWidget->setHorizontalHeaderLabels(headers);
 
-    // 连接员工按钮的信号和槽
-        connect(ui->AddEmployeeButton, &QPushButton::clicked,
-                this, &MainWindow::onAddEmployeeClicked);
-        connect(ui->DeleteEmployeeButton, &QPushButton::clicked,
-                this, &MainWindow::onDeleteEmployeeClicked);
-    // 连接工资按钮的信号和槽
-//        connect(ui->AddSalaryButton, &QPushButton::clicked,
-//                this, &MainWindow::onAddSalaryClicked);
-//        connect(ui->DeleteSalaryButton, &QPushButton::clicked,
-//                this, &MainWindow::onDeleteSalaryClicked);
-        connect(ui->SalaryButton, &QPushButton::clicked,
-                this, &MainWindow::on_SalaryButton_clicked);
+    // **关键：把 tableWidget 设置为中心窗口**
+    setCentralWidget(ui->tableWidget);
+    resize(1000, 600);
+    // 添加员工
+    addEmployeeAction = new QAction(tr("添加员工"), this);
+    connect(addEmployeeAction, &QAction::triggered, this, &MainWindow::onAddEmployeeClicked);
+    toolBar->addAction(addEmployeeAction);
+    toolBar->addSeparator();
+
+    // 删除员工
+    deleteEmployeeAction = new QAction(tr("删除员工"), this);
+    connect(deleteEmployeeAction, &QAction::triggered, this, &MainWindow::onDeleteEmployeeClicked);
+    toolBar->addAction(deleteEmployeeAction);
+    toolBar->addSeparator();
+
+    // 工资
+    salaryAction = new QAction(tr("工资管理"), this);
+    connect(salaryAction, &QAction::triggered, this, &MainWindow::on_SalaryButton_clicked);
+    toolBar->addAction(salaryAction);
+
 
     // 连接表格的选择信号
         connect(ui->tableWidget, &QTableWidget::cellClicked,
                 this, &MainWindow::onEmployeeSelected);
-        connect(ui->tableWidget, &QTableWidget::cellDoubleClicked,
-                this, &MainWindow::onEmployeeDoubleClicked);
 
     // +++ 添加测试员工 +++
     Employee* testEmp = new Employee();
@@ -87,17 +97,11 @@ void MainWindow::onEmployeeSelected(int row, int column)
         Employee* selectedEmployee = m_employees[row];
         qDebug() << "选中了职工:" << selectedEmployee->name;
 
-        // 不再更新工资表，只启用按钮
-//        ui->AddSalaryButton->setEnabled(true);
-//        ui->DeleteSalaryButton->setEnabled(true);
-    } else {
-//        ui->AddSalaryButton->setEnabled(false);
-//        ui->DeleteSalaryButton->setEnabled(false);
     }
 }
 
 
-// 非常重要的 helper 函数：向数组添加一个新职工，并处理数组扩容
+// 向数组添加一个新职工，并处理数组扩容
 void MainWindow::addEmployeeToArray(Employee* newEmployee)
 {
     // 1. 检查是否需要扩容（公寓楼是否住满了）
@@ -201,104 +205,9 @@ void MainWindow::onDeleteEmployeeClicked()
     qDebug() << "删除职工成功，当前总数：" << m_employeeCount;
 }
 
-//void MainWindow::onAddSalaryClicked()
-//{
-//    if (m_currentSelectedRow < 0 || m_currentSelectedRow >= m_employeeCount) {
-//        QMessageBox::warning(this, "警告", "请先选择一个职工");
-//        return;
-//    }
-
-//    Employee* selectedEmployee = m_employees[m_currentSelectedRow];
-
-//    MonthlySalary newSalary;
-//    newSalary.month = QDate::currentDate().toString("yyyy-MM");
-//    QRandomGenerator *generator = QRandomGenerator::global();
-//    newSalary.basicSalary = 5000 + (generator->bounded(2000));
-//    newSalary.postSalary = 2000 + (generator->bounded(1000));
-//    newSalary.senioritySalary = selectedEmployee->age * 20;
-
-//    selectedEmployee->addSalary(newSalary);
-
-//    QMessageBox::information(this, "成功",
-//        QString("已为 %1 添加 %2 月的工资记录")
-//        .arg(selectedEmployee->name).arg(newSalary.month));
-
-//    // 如果工资窗口开着，刷新它
-//    QList<SalaryWindow*> windows = this->findChildren<SalaryWindow*>();
-//    for (SalaryWindow* win : windows) {
-//        if (win->isVisible() && win->m_employee == selectedEmployee) {
-//            win->updateSalaryTable();
-//        }
-//    }
-//}
 
 
-//void MainWindow::onDeleteSalaryClicked()
-//{
-//    if (m_currentSelectedRow < 0 || m_currentSelectedRow >= m_employeeCount) {
-//        QMessageBox::warning(this, "警告", "请先选择一个职工");
-//        return;
-//    }
-
-//    Employee* selectedEmployee = m_employees[m_currentSelectedRow];
-//    if (selectedEmployee->salaryCount == 0) {
-//        QMessageBox::information(this, "提示", "该职工没有工资记录");
-//        return;
-//    }
-
-//    selectedEmployee->salaryCount--;
-
-//    QMessageBox::information(this, "成功", "已删除最后一条工资记录");
-
-//    // 如果工资窗口开着，刷新它
-//    QList<SalaryWindow*> windows = this->findChildren<SalaryWindow*>();
-//    for (SalaryWindow* win : windows) {
-//        if (win->isVisible() && win->m_employee == selectedEmployee) {
-//            win->updateSalaryTable();
-//        }
-//    }
-//}
-
-// 更新工资表格显示
-//void MainWindow::updateSalaryTable(Employee* employee)
-//{
-//    // 先清空表格
-//    // 假设你的工资表格objectName是salaryTableWidget
-//    ui->salaryTableWidget->setRowCount(0);
-
-//    if (!employee) {
-//        return;
-//    }
-
-//    // 设置行数为工资记录数
-//    ui->salaryTableWidget->setRowCount(employee->salaryCount);
-
-//    // 遍历并显示所有工资记录
-//    for (int i = 0; i < employee->salaryCount; ++i) {
-//        MonthlySalary* salary = employee->getSalary(i);
-//        if (salary) {
-//            ui->salaryTableWidget->setItem(i, 0, new QTableWidgetItem(salary->month));
-//            ui->salaryTableWidget->setItem(i, 1, new QTableWidgetItem(QString::number(salary->basicSalary)));
-//            ui->salaryTableWidget->setItem(i, 2, new QTableWidgetItem(QString::number(salary->postSalary)));
-//            ui->salaryTableWidget->setItem(i, 3, new QTableWidgetItem(QString::number(salary->senioritySalary)));
-//            // 可以继续添加其他工资项目...
-//        }
-//    }
-//}
-
-// 修改职工选择函数
-void MainWindow::onEmployeeDoubleClicked(int row, int column)
-{
-    if (row >= 0 && row < m_employeeCount) {
-            Employee* selectedEmployee = m_employees[row];
-            QString cellText = ui->tableWidget->item(row, column)->text();
-            QMessageBox::information(this, "单元格信息",
-                                     QString("员工: %1\n工号: %2")
-                                         .arg(selectedEmployee->name)
-                                         .arg(cellText));
-        }
-}
-
+//工资按钮
 void MainWindow::on_SalaryButton_clicked()
 {
     if (m_currentSelectedRow < 0 || m_currentSelectedRow >= m_employeeCount) {
@@ -321,4 +230,9 @@ void MainWindow::on_SalaryButton_clicked()
         salaryWin->show();
         salaryWin->raise();
         salaryWin->activateWindow();
+}
+
+void MainWindow::on_addEmployee_triggered()
+{
+
 }

@@ -24,19 +24,14 @@ public:
     // 按钮点击的槽函数
     void onAddEmployeeClicked();
     void onDeleteEmployeeClicked();
-    void onAddSalaryClicked();
-    void onDeleteSalaryClicked();
 
     //员工被单击选择的槽函数
     void onEmployeeSelected(int row,int column);
 
-    // 表格选择变化的槽函数
-    void onEmployeeDoubleClicked(int row, int column);
-
-
-
 private slots:
     void on_SalaryButton_clicked();
+
+    void on_addEmployee_triggered();
 
 private:
     Ui::MainWindow *ui;
@@ -51,8 +46,10 @@ private:
 
     void updateEmployeeTable();
     void addEmployeeToArray(Employee* newEmployee);
-//    void updateSalaryTable(Employee* employee);  // 更新工资表格显示
 
+    QAction *addEmployeeAction;
+    QAction *deleteEmployeeAction;
+    QAction *salaryAction;
 
 };
 
