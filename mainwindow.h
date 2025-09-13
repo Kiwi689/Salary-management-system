@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <salarywindow.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -45,6 +46,8 @@ private:
     int m_employeeCount;
     int m_employeeCapacity;
     int m_currentSelectedRow; // 记录当前选中的职工行号
+
+    SalaryWindow* salaryWin = nullptr;  // 保存指针
 
     void updateEmployeeTable();
     void addEmployeeToArray(Employee* newEmployee);

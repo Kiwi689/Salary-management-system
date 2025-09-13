@@ -63,6 +63,32 @@
     <string>返回</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="btnAddSalary">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>250</y>
+     <width>80</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>添加工资</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnDeleteSalary">
+   <property name="geometry">
+    <rect>
+     <x>320</x>
+     <y>250</y>
+     <width>80</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>删除工资</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

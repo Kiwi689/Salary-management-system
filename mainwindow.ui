@@ -19,7 +19,7 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>571</width>
+      <width>761</width>
       <height>331</height>
      </rect>
     </property>
@@ -48,42 +48,6 @@
     </property>
     <property name="text">
      <string>删除员工</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="AddSalaryButton">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>350</y>
-      <width>121</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>添加工资</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="DeleteSalaryButton">
-    <property name="geometry">
-     <rect>
-      <x>130</x>
-      <y>350</y>
-      <width>111</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>删除工资</string>
-    </property>
-   </widget>
-   <widget class="QTableWidget" name="salaryTableWidget">
-    <property name="geometry">
-     <rect>
-      <x>590</x>
-      <y>270</y>
-      <width>256</width>
-      <height>192</height>
-     </rect>
     </property>
    </widget>
    <widget class="QPushButton" name="SalaryButton">

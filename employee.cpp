@@ -50,6 +50,27 @@ void Employee::addSalary(const MonthlySalary &newSalary){
     salaryCount++;
 }
 
+//delete monthly salary recording
+void Employee::removeSalary(int index) {
+    if (index < 0 || index >= salaryCount) return;
+
+    // 新数组（少一个元素）
+    MonthlySalary* newArr = new MonthlySalary[salaryCount - 1];
+
+    // 拷贝除 index 外的元素
+    int k = 0;
+    for (int i = 0; i < salaryCount; i++) {
+        if (i == index) continue;
+        newArr[k++] = salaries[i];
+    }
+
+    // 替换旧数组
+    delete[] salaries;
+    salaries = newArr;
+    salaryCount--;
+}
+
+
 //get monthly recording searched
 MonthlySalary* Employee::getSalary(int index) const{
     if(index >=0 && index < salaryCount){

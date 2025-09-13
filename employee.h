@@ -22,7 +22,7 @@ public:
 
     // 添加月工资记录的功能函数
     void addSalary(const MonthlySalary& newSalary);
-
+    void removeSalary(int index);
     // 可选：获取第i个月工资记录，能不能完成不知道
     MonthlySalary* getSalary(int index) const;
 
