@@ -232,7 +232,4 @@ void MainWindow::on_SalaryButton_clicked()
         salaryWin->activateWindow();
 }
 
-void MainWindow::on_addEmployee_triggered()
-{
 
-}

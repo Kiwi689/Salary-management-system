@@ -2,55 +2,71 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <salarywindow.h>
+#include <QSet> // 需要包含QSet
+#include "employee.h"
+#include "salarywindow.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-class Employee;
-
-namespace Ui{
-class MainWindow;
-}
-
-class MainWindow:public QMainWindow{
+class MainWindow : public QMainWindow
+{
     Q_OBJECT
+
 public:
-    explicit MainWindow(QWidget *parent=nullptr);
+    MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-
-    // 按钮点击的槽函数
+private slots:
+    // --- 原有槽函数 ---
     void onAddEmployeeClicked();
     void onDeleteEmployeeClicked();
-
-    //员工被单击选择的槽函数
-    void onEmployeeSelected(int row,int column);
-
-private slots:
+    void onEmployeeSelected(int row, int column);
     void on_SalaryButton_clicked();
 
-    void on_addEmployee_triggered();
+    // --- 新增槽函数 ---
+    void onQueryEmployeeClicked();
+    void onLoadDataClicked();
+    void onExportDataClicked();
+
 
 private:
+    // --- UI 和数据 ---
     Ui::MainWindow *ui;
-
-    Employee** m_employees;//二级指针 意为Employee* m_employees[]
-
+    Employee** m_employees;
     int m_employeeCount;
     int m_employeeCapacity;
-    int m_currentSelectedRow; // 记录当前选中的职工行号
+    int m_currentSelectedRow;
+    SalaryWindow *salaryWin = nullptr;
 
-    SalaryWindow* salaryWin = nullptr;  // 保存指针
+    // --- 新增的查询相关成员 ---
+    bool m_isEmployeeFiltered = false;
+    QSet<int> m_filteredEmployeeRows;
 
-    void updateEmployeeTable();
+
+    // --- 核心功能函数 ---
     void addEmployeeToArray(Employee* newEmployee);
+    void updateEmployeeTable();
+    void clearAllData(); // 新增：用于安全加载新数据前清空内存
 
+    // --- 新增的查询相关函数 ---
+    void applyEmployeeFilter();
+    void clearEmployeeFilter();
+
+    // --- 新增的导入导出函数 ---
+    void saveDataToJson(const QString& filePath);
+    void loadDataFromJson(const QString& filePath);
+
+
+    // --- 界面元素 ---
     QAction *addEmployeeAction;
     QAction *deleteEmployeeAction;
     QAction *salaryAction;
+    // --- 新增的界面Action ---
+    QAction *queryAction;
+    QAction *loadAction;
+    QAction *exportAction;
 
 };
-
 #endif // MAINWINDOW_H
