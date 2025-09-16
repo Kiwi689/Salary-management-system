@@ -1,0 +1,119 @@
+/* ==================== 全局样式 ==================== */
+QWidget {
+    font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    font-size: 10pt;
+    color: #222; /* 字体颜色稍微加深，增加对比度 */
+}
+
+/* ==================== 窗口背景 ==================== */
+/* 为主窗口设置一个非常淡的蓝色背景 */
+QMainWindow#MainWindow {
+    background-color: #eaf7ff;
+}
+
+/* 为工资窗口设置一个稍深一点的蓝色背景以作区分 */
+QWidget#SalaryWindow {
+    background-color: #e2f1ff;
+}
+
+/* 其他对话框和登录窗口保持淡灰色 */
+QDialog, QMainWindow {
+    background-color: #f5f5f5;
+}
+
+
+/* ==================== 工具栏 ==================== */
+QToolBar {
+    background-color: #ffffff;
+    border-bottom: 1px solid #d0e0ff; /* 边框颜色也改为蓝色系 */
+    padding: 4px;
+    spacing: 8px;
+}
+/* ... (工具栏按钮样式保持不变) ... */
+QToolButton {
+    padding: 8px;
+    border-radius: 4px;
+    background-color: transparent;
+}
+QToolButton:hover {
+    background-color: #e0f0ff;
+}
+QToolButton:pressed {
+    background-color: #cce4ff;
+}
+
+
+/* ==================== 按钮 ==================== */
+/* ... (按钮样式保持不变) ... */
+QPushButton {
+    min-height: 28px;
+    padding: 0 15px;
+    border-radius: 4px;
+    border: 1px solid #c0d0e0;
+    background-color: #fdfdfd;
+}
+QPushButton:hover {
+    background-color: #e9f5ff;
+}
+QPushButton:pressed {
+    background-color: #dcefff;
+}
+QPushButton#primaryButton {
+    background-color: #0078d7;
+    color: white;
+    border: none;
+}
+QPushButton#primaryButton:hover {
+    background-color: #005a9e;
+}
+QPushButton#primaryButton:pressed {
+    background-color: #004578;
+}
+QPushButton#linkButton {
+    background-color: transparent;
+    border: none;
+    color: #0078d7;
+    text-decoration: underline;
+}
+
+
+/* ==================== 输入框 ==================== */
+/* ... (输入框样式保持不变) ... */
+QLineEdit {
+    min-height: 28px;
+    border: 1px solid #c0d0e0;
+    border-radius: 4px;
+    padding: 0 8px; /* 内边距 */
+    background-color: white;
+}
+QLineEdit:focus {
+    border: 1px solid #0078d7;
+}
+
+
+/* ==================== 表格 ==================== */
+QTableWidget {
+    border: 1px solid #c0d0e0;
+    gridline-color: #d8e8f8; /* 网格线颜色 */
+    background-color: #fdfefe;
+    alternate-background-color: #eef7ff; /* 【核心】配套的蓝色系交替行颜色 */
+}
+
+/* 表头 */
+QHeaderView::section {
+    background-color: #e2f1ff; /* 表头背景色 */
+    padding: 8px;
+    border: none;
+    border-bottom: 1px solid #c0d0e0;
+    font-weight: bold;
+}
+
+/* 表格单元格 */
+QTableWidget::item {
+    padding: 5px;
+    border-bottom: 1px solid #d8e8f8; /* 让单元格有下划线，更清晰 */
+}
+QTableWidget::item:selected {
+    background-color: #b3d9ff; /* 【核心】配套的蓝色系选中颜色 */
+    color: #000;
+}
