@@ -2,12 +2,12 @@
 #define SALARYWINDOW_H
 
 #include <QWidget>
-#include "employee.h"   // 需要员工类
 #include <QSet>
+#include "employee.h"
 
-namespace Ui {
-class SalaryWindow;
-}
+// --- Forward declarations ---
+class QTableWidget;
+class QPushButton;
 
 class SalaryWindow : public QWidget
 {
@@ -16,27 +16,35 @@ class SalaryWindow : public QWidget
 public:
     explicit SalaryWindow(Employee* emp, QWidget *parent = nullptr);
     ~SalaryWindow();
-    Employee* m_employee;  // 当前要显示工资的员工
-    void updateSalaryTable();  // 刷新工资表
-    void onCellChanged(int row, int column);
-//signals:
-//    void backToMain();  // 通知主窗口返回
 
 private slots:
     void on_btnAddSalary_clicked();
     void on_btnDeleteSalary_clicked();
+    void onCellChanged(int row, int column);
     void onQueryClicked();
     void onLoadClicked();
     void onExportClicked();
-    void clearFilter(); // 添加这行
+    void clearFilter();
 
 private:
-    Ui::SalaryWindow *ui;
+    void updateSalaryTable();
+    void applyFilter();
+
+    // --- 【FIX】Add the missing function declaration here ---
     bool exportToTextFile(const QString &fileName, bool isCSV);
-    bool exportToExcel(const QString &fileName);
-    QSet<int> m_filteredRows; // 存储当前筛选的行
-    bool m_isFiltered;        // 是否处于筛选状态
-    void applyFilter(); // 也需要声明
+
+    // --- Data members ---
+    Employee* m_employee;
+    bool m_isFiltered;
+    QSet<int> m_filteredRows;
+
+    // --- UI widget members ---
+    QTableWidget *tableWidget;
+    QPushButton *btnAddSalary;
+    QPushButton *btnDeleteSalary;
+    QPushButton *queryButton;
+    QPushButton *loadButton;
+    QPushButton *exportButton;
 };
 
 #endif // SALARYWINDOW_H

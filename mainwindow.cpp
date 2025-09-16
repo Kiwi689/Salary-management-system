@@ -1,235 +1,473 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "loginwindow.h"
 #include "employee.h"
-#include "monthlysalary.h"
 #include "salarywindow.h"
+
 #include <QToolBar>
 #include <QMessageBox>
 #include <QDebug>
-#include <QTableWidgetItem> // 需要这个来操作表格项
-#include <QDate>   // 添加这行，包含QDate头文件
-#include <QRandomGenerator> // 同时添加这个，用于生成随机数
+#include <QTableWidgetItem>
+#include <QInputDialog>
+#include <QFileDialog>
 
+// === 新增的头文件，用于JSON处理和查询对话框 ===
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QFile>
+#include <QDialog>
+#include <QFormLayout>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QDialogButtonBox>
+#include <QPushButton>
 
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , m_employees(nullptr)    // 初始化指针为空
-    , m_employeeCount(0)      // 初始数量为0
-    , m_employeeCapacity(0)   // 初始容量为0
-    , m_currentSelectedRow(-1) // 初始化为-1，表示没有选中
+    , m_employees(nullptr)
+    , m_employeeCount(0)
+    , m_employeeCapacity(0)
+    , m_currentSelectedRow(-1)
 {
     ui->setupUi(this);
 
+    // 设置窗口标题和大小
+    setWindowTitle("企业员工信息管理系统");
+    resize(1000, 600);
 
-    // 工具栏
+    // ====================== 工具栏设置 ======================
     QToolBar *toolBar = addToolBar(tr("主工具栏"));
     toolBar->setFixedHeight(60);
-    toolBar->setStyleSheet("QToolButton { font-size: 10pt; }");
+    toolBar->setStyleSheet("QToolButton { font-size: 10pt; padding: 8px; }"); // 样式优化
 
-    // 表格
+    // --- 员工管理 ---
+    addEmployeeAction = new QAction(tr("添加员工"), this);
+    toolBar->addAction(addEmployeeAction);
+
+    deleteEmployeeAction = new QAction(tr("删除员工"), this);
+    toolBar->addAction(deleteEmployeeAction);
+
+    toolBar->addSeparator();
+
+    // --- 工资管理 ---
+    salaryAction = new QAction(tr("工资管理"), this);
+    toolBar->addAction(salaryAction);
+
+    toolBar->addSeparator();
+
+    // --- 【新增】查询与文件操作 ---
+    queryAction = new QAction(tr("查询员工"), this);
+    toolBar->addAction(queryAction);
+
+    loadAction = new QAction(tr("导入数据"), this);
+    toolBar->addAction(loadAction);
+
+    exportAction = new QAction(tr("导出数据"), this);
+    toolBar->addAction(exportAction);
+
+    // ====================== 表格设置 ======================
     ui->tableWidget->setColumnCount(5);
     QStringList headers;
     headers << "工号" << "姓名" << "年龄" << "电话" << "住址";
     ui->tableWidget->setHorizontalHeaderLabels(headers);
+    ui->tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers); // 表格只读
 
-    // **关键：把 tableWidget 设置为中心窗口**
     setCentralWidget(ui->tableWidget);
-    resize(1000, 600);
-    // 添加员工
-    addEmployeeAction = new QAction(tr("添加员工"), this);
+
+    // ====================== 连接信号与槽 ======================
     connect(addEmployeeAction, &QAction::triggered, this, &MainWindow::onAddEmployeeClicked);
-    toolBar->addAction(addEmployeeAction);
-    toolBar->addSeparator();
-
-    // 删除员工
-    deleteEmployeeAction = new QAction(tr("删除员工"), this);
     connect(deleteEmployeeAction, &QAction::triggered, this, &MainWindow::onDeleteEmployeeClicked);
-    toolBar->addAction(deleteEmployeeAction);
-    toolBar->addSeparator();
-
-    // 工资
-    salaryAction = new QAction(tr("工资管理"), this);
     connect(salaryAction, &QAction::triggered, this, &MainWindow::on_SalaryButton_clicked);
-    toolBar->addAction(salaryAction);
+    connect(ui->tableWidget, &QTableWidget::cellClicked, this, &MainWindow::onEmployeeSelected);
+
+    // --- 【新增】连接新功能的信号 ---
+    connect(queryAction, &QAction::triggered, this, &MainWindow::onQueryEmployeeClicked);
+    connect(loadAction, &QAction::triggered, this, &MainWindow::onLoadDataClicked);
+    connect(exportAction, &QAction::triggered, this, &MainWindow::onExportDataClicked);
 
 
-    // 连接表格的选择信号
-        connect(ui->tableWidget, &QTableWidget::cellClicked,
-                this, &MainWindow::onEmployeeSelected);
-
-    // +++ 添加测试员工 +++
+    // 加载一个测试员工
     Employee* testEmp = new Employee();
     testEmp->id = "1001";
-    testEmp->name = "测试员工";
-    testEmp->age = 25;
+    testEmp->name = "张三";
+    testEmp->age = 35;
     testEmp->phone = "13800138000";
-    testEmp->address = "测试地址";
-    addEmployeeToArray(testEmp); // 用我们写的函数来添加
+    testEmp->address = "北京朝阳区";
+    // 为测试员工添加几条工资
+    MonthlySalary s1; s1.month = "2025-07"; s1.basicSalary = 8000; testEmp->addSalary(s1);
+    MonthlySalary s2; s2.month = "2025-08"; s2.basicSalary = 8200; testEmp->addSalary(s2);
+    addEmployeeToArray(testEmp);
 
-    // 刷新显示
     updateEmployeeTable();
 }
 
-
 MainWindow::~MainWindow()
 {
-    // 1. 删除每一个Employee对象（公寓里的每个人）
-    for (int i = 0; i < m_employeeCount; ++i) {
-        delete m_employees[i]; // 删除Employee对象
-    }
-
-    // 2. 删除存储指针的数组本身（拆除公寓楼）
-    delete[] m_employees;
-
+    clearAllData(); // 使用封装的清理函数
     delete ui;
 }
 
+// 清理所有员工数据，释放内存
+void MainWindow::clearAllData()
+{
+    for (int i = 0; i < m_employeeCount; ++i) {
+        delete m_employees[i];
+    }
+    delete[] m_employees;
+
+    m_employees = nullptr;
+    m_employeeCount = 0;
+    m_employeeCapacity = 0;
+    m_currentSelectedRow = -1;
+}
+
+
+// ====================================================================
+// =========================  新增功能：查询员工  =========================
+// ====================================================================
+
+void MainWindow::onQueryEmployeeClicked()
+{
+    if (m_isEmployeeFiltered) {
+        int result = QMessageBox::question(this, "清除筛选", "当前已有筛选，是否清除？", QMessageBox::Yes | QMessageBox::No);
+        if (result == QMessageBox::Yes) {
+            clearEmployeeFilter();
+        }
+        return;
+    }
+
+    QDialog dialog(this);
+    dialog.setWindowTitle("查询员工");
+    QFormLayout form(&dialog);
+
+    QComboBox *fieldCombo = new QComboBox(&dialog);
+    fieldCombo->addItem("姓名", "name");
+    fieldCombo->addItem("工号", "id");
+    fieldCombo->addItem("电话", "phone");
+    fieldCombo->addItem("住址", "address");
+
+    QLineEdit *valueEdit = new QLineEdit(&dialog);
+    valueEdit->setPlaceholderText("输入查询关键词");
+
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dialog);
+    form.addRow("查询字段:", fieldCombo);
+    form.addRow("查询值:", valueEdit);
+    form.addRow(&buttonBox);
+    connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(&buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        QString field = fieldCombo->currentData().toString();
+        QString value = valueEdit->text().trimmed();
+        if (value.isEmpty()) {
+            QMessageBox::warning(this, "提示", "请输入查询值");
+            return;
+        }
+
+        m_filteredEmployeeRows.clear();
+        for (int i = 0; i < m_employeeCount; ++i) {
+            Employee* emp = m_employees[i];
+            bool match = false;
+            if (field == "name") {
+                match = emp->name.contains(value);
+            } else if (field == "id") {
+                match = emp->id.contains(value);
+            } else if (field == "phone") {
+                match = emp->phone.contains(value);
+            } else if (field == "address") {
+                match = emp->address.contains(value);
+            }
+            if (match) {
+                m_filteredEmployeeRows.insert(i);
+            }
+        }
+
+        if (m_filteredEmployeeRows.isEmpty()) {
+            QMessageBox::information(this, "查询结果", "未找到匹配的员工。");
+        } else {
+            m_isEmployeeFiltered = true;
+            applyEmployeeFilter();
+            QMessageBox::information(this, "查询结果", QString("找到 %1 名匹配的员工。").arg(m_filteredEmployeeRows.size()));
+        }
+    }
+}
+
+void MainWindow::applyEmployeeFilter()
+{
+    for (int i = 0; i < ui->tableWidget->rowCount(); ++i) {
+        if (m_isEmployeeFiltered && !m_filteredEmployeeRows.contains(i)) {
+            ui->tableWidget->setRowHidden(i, true);
+        } else {
+            ui->tableWidget->setRowHidden(i, false);
+        }
+    }
+}
+
+void MainWindow::clearEmployeeFilter()
+{
+    m_filteredEmployeeRows.clear();
+    m_isEmployeeFiltered = false;
+    applyEmployeeFilter(); // 传入false状态，会自动显示所有行
+}
+
+
+// ====================================================================
+// ======================  新增功能：导入/导出  ========================
+// ====================================================================
+
+void MainWindow::onLoadDataClicked()
+{
+    int result = QMessageBox::question(this, "导入数据",
+                                       "导入数据将覆盖当前所有员工信息，确定要继续吗？",
+                                       QMessageBox::Yes | QMessageBox::No);
+    if (result == QMessageBox::No) {
+        return;
+    }
+
+    QString filePath = QFileDialog::getOpenFileName(this, "选择导入文件", "", "JSON文件 (*.json)");
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    loadDataFromJson(filePath);
+}
+
+void MainWindow::onExportDataClicked()
+{
+    if (m_employeeCount == 0) {
+        QMessageBox::information(this, "提示", "当前没有员工数据可以导出。");
+        return;
+    }
+
+    QString filePath = QFileDialog::getSaveFileName(this, "选择导出位置", "employees_data.json", "JSON文件 (*.json)");
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    saveDataToJson(filePath);
+}
+
+void MainWindow::saveDataToJson(const QString &filePath)
+{
+    QJsonArray employeesArray;
+    for (int i = 0; i < m_employeeCount; ++i) {
+        Employee* emp = m_employees[i];
+        QJsonObject employeeObject;
+        employeeObject["id"] = emp->id;
+        employeeObject["name"] = emp->name;
+        employeeObject["age"] = emp->age;
+        employeeObject["phone"] = emp->phone;
+        employeeObject["address"] = emp->address;
+
+        // --- 核心：嵌入工资数据 ---
+        QJsonArray salariesArray;
+        for (int j = 0; j < emp->salaryCount; ++j) {
+            MonthlySalary* s = emp->getSalary(j);
+            QJsonObject salaryObject;
+            salaryObject["month"] = s->month;
+            salaryObject["basicSalary"] = s->basicSalary;
+            salaryObject["postSalary"] = s->postSalary;
+            salaryObject["senioritySalary"] = s->senioritySalary;
+            salaryObject["allowance"] = s->allowance;
+            salaryObject["postAllowance"] = s->postAllowance;
+            salaryObject["subsidy"] = s->subsidy;
+            salaryObject["housingAllowance"] = s->housingAllowance;
+            salaryObject["transportAllowance"] = s->transportAllowance;
+            salariesArray.append(salaryObject);
+        }
+        employeeObject["salaries"] = salariesArray;
+        employeesArray.append(employeeObject);
+    }
+
+    QJsonDocument doc(employeesArray);
+    QFile file(filePath);
+    if (file.open(QIODevice::WriteOnly)) {
+        file.write(doc.toJson(QJsonDocument::Indented)); // Indented使JSON文件格式化，更易读
+        file.close();
+        QMessageBox::information(this, "成功", "数据已成功导出到:\n" + filePath);
+    } else {
+        QMessageBox::critical(this, "错误", "无法写入文件:\n" + filePath);
+    }
+}
+
+void MainWindow::loadDataFromJson(const QString &filePath)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::critical(this, "错误", "无法读取文件:\n" + filePath);
+        return;
+    }
+
+    QByteArray data = file.readAll();
+    file.close();
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+
+    if (!doc.isArray()) {
+        QMessageBox::critical(this, "错误", "文件格式无效，根节点必须是JSON数组。");
+        return;
+    }
+
+    // --- 安全地加载数据 ---
+    clearAllData(); // 先清空现有数据
+    clearEmployeeFilter(); // 清除筛选状态
+
+    QJsonArray employeesArray = doc.array();
+    for (const QJsonValue &value : employeesArray) {
+        QJsonObject employeeObject = value.toObject();
+        Employee* newEmployee = new Employee();
+
+        newEmployee->id = employeeObject["id"].toString();
+        newEmployee->name = employeeObject["name"].toString();
+        newEmployee->age = employeeObject["age"].toInt();
+        newEmployee->phone = employeeObject["phone"].toString();
+        newEmployee->address = employeeObject["address"].toString();
+
+        // --- 核心：读取工资数据 ---
+        if (employeeObject.contains("salaries") && employeeObject["salaries"].isArray()) {
+            QJsonArray salariesArray = employeeObject["salaries"].toArray();
+            for (const QJsonValue &s_value : salariesArray) {
+                QJsonObject salaryObject = s_value.toObject();
+                MonthlySalary s;
+                s.month = salaryObject["month"].toString();
+                s.basicSalary = salaryObject["basicSalary"].toDouble();
+                s.postSalary = salaryObject["postSalary"].toDouble();
+                s.senioritySalary = salaryObject["senioritySalary"].toDouble();
+                s.allowance = salaryObject["allowance"].toDouble();
+                s.postAllowance = salaryObject["postAllowance"].toDouble();
+                s.subsidy = salaryObject["subsidy"].toDouble();
+                s.housingAllowance = salaryObject["housingAllowance"].toDouble();
+                s.transportAllowance = salaryObject["transportAllowance"].toDouble();
+                newEmployee->addSalary(s);
+            }
+        }
+        addEmployeeToArray(newEmployee);
+    }
+
+    updateEmployeeTable();
+    QMessageBox::information(this, "成功", QString("成功从文件导入 %1 名员工的数据。").arg(m_employeeCount));
+}
+
+
+// ====================================================================
+// ======================  以下为原有功能函数  =========================
+// ====================================================================
 
 void MainWindow::onEmployeeSelected(int row, int column)
 {
     Q_UNUSED(column);
     m_currentSelectedRow = row;
-
     if (row >= 0 && row < m_employeeCount) {
         Employee* selectedEmployee = m_employees[row];
         qDebug() << "选中了职工:" << selectedEmployee->name;
-
     }
 }
 
-
-// 向数组添加一个新职工，并处理数组扩容
 void MainWindow::addEmployeeToArray(Employee* newEmployee)
 {
-    // 1. 检查是否需要扩容（公寓楼是否住满了）
     if (m_employeeCount >= m_employeeCapacity) {
-        // 计算新的容量。如果当前是0，就扩容到2，否则扩容到当前的1.5倍+1
         int newCapacity = (m_employeeCapacity == 0) ? 2 : (m_employeeCapacity * 3 / 2 + 1);
-
-        // 2. 申请新的、更大的“公寓楼”（数组）
         Employee** newArray = new Employee*[newCapacity];
-
-        // 3. 把原来“公寓楼”里的人全部搬到新楼（拷贝数据）
         for (int i = 0; i < m_employeeCount; ++i) {
             newArray[i] = m_employees[i];
         }
-
-        // 4. 拆掉旧的公寓楼，释放内存
         delete[] m_employees;
-
-        // 5. 让m_employees指向新的公寓楼
         m_employees = newArray;
         m_employeeCapacity = newCapacity;
     }
-
-    // 6. 把新职工安排进新房间
     m_employees[m_employeeCount] = newEmployee;
     m_employeeCount++;
 }
 
-// 更新表格显示
 void MainWindow::updateEmployeeTable()
 {
-    // 1. 先清空表格所有行
+    qDebug() << "[诊断] 正在更新 MainWindow 的【员工】表格...";
     ui->tableWidget->setRowCount(0);
-
-    // 2. 设置表格的行数为当前职工数量
     ui->tableWidget->setRowCount(m_employeeCount);
-
-    // 3. 遍历数组，填充表格
     for (int i = 0; i < m_employeeCount; ++i) {
-        Employee* emp = m_employees[i]; // 拿到第i个职工的指针
-
-        // 创建表格项并填入数据
+        Employee* emp = m_employees[i];
         ui->tableWidget->setItem(i, 0, new QTableWidgetItem(emp->id));
         ui->tableWidget->setItem(i, 1, new QTableWidgetItem(emp->name));
-        ui->tableWidget->setItem(i, 2, new QTableWidgetItem(QString::number(emp->age))); // 数字转字符串
+        ui->tableWidget->setItem(i, 2, new QTableWidgetItem(QString::number(emp->age)));
         ui->tableWidget->setItem(i, 3, new QTableWidgetItem(emp->phone));
         ui->tableWidget->setItem(i, 4, new QTableWidgetItem(emp->address));
     }
 }
 
-
-
-// 添加职工按钮点击
 void MainWindow::onAddEmployeeClicked()
 {
-    // 1. 创建一个新的职工对象
+    // 使用 QInputDialog 获取用户信息，比硬编码更好
+    bool ok;
+    QString name = QInputDialog::getText(this, "添加新员工", "姓名:", QLineEdit::Normal, "", &ok);
+    if (!ok || name.isEmpty()) return;
+
+    QString id = QInputDialog::getText(this, "添加新员工", "工号:", QLineEdit::Normal, "", &ok);
+    if (!ok || id.isEmpty()) return;
+
+    int age = QInputDialog::getInt(this, "添加新员工", "年龄:", 25, 18, 100, 1, &ok);
+    if (!ok) return;
+
+    QString phone = QInputDialog::getText(this, "添加新员工", "电话:", QLineEdit::Normal, "", &ok);
+    if (!ok) return; // 电话可以为空
+
+    QString address = QInputDialog::getText(this, "添加新员工", "住址:", QLineEdit::Normal, "", &ok);
+    if (!ok) return; // 地址可以为空
+
+
     Employee* newEmployee = new Employee();
+    newEmployee->id = id;
+    newEmployee->name = name;
+    newEmployee->age = age;
+    newEmployee->phone = phone;
+    newEmployee->address = address;
 
-    // 2. 这里应该弹出一个对话框让用户输入信息
-    // 暂时先用测试数据
-    newEmployee->id = QString::number(1000 + m_employeeCount + 1);
-    newEmployee->name = "新员工" + QString::number(m_employeeCount + 1);
-    newEmployee->age = 20 + m_employeeCount;
-    newEmployee->phone = "未知";
-    newEmployee->address = "未知";
-
-    // 3. 添加到数组
     addEmployeeToArray(newEmployee);
-
-    // 4. 更新显示
     updateEmployeeTable();
-
     qDebug() << "添加职工成功，当前总数：" << m_employeeCount;
 }
 
-// 删除职工按钮点击
 void MainWindow::onDeleteEmployeeClicked()
 {
     if (m_currentSelectedRow < 0 || m_currentSelectedRow >= m_employeeCount) {
-        QMessageBox::warning(this, "警告", "请先选择一个职工");
+        QMessageBox::warning(this, "警告", "请先选择一个要删除的职工");
         return;
     }
 
-    // 1. 删除职工对象
-    delete m_employees[m_currentSelectedRow];
+    int result = QMessageBox::question(this, "确认删除",
+                                       QString("确定要删除员工【%1】吗？此操作不可恢复。")
+                                       .arg(m_employees[m_currentSelectedRow]->name),
+                                       QMessageBox::Yes | QMessageBox::No);
 
-    // 2. 将后面的元素前移
-    for (int i = m_currentSelectedRow; i < m_employeeCount - 1; ++i) {
-        m_employees[i] = m_employees[i + 1];
+    if (result == QMessageBox::Yes) {
+        delete m_employees[m_currentSelectedRow];
+        for (int i = m_currentSelectedRow; i < m_employeeCount - 1; ++i) {
+            m_employees[i] = m_employees[i + 1];
+        }
+        m_employeeCount--;
+        m_currentSelectedRow = -1;
+        updateEmployeeTable();
+        qDebug() << "删除职工成功，当前总数：" << m_employeeCount;
     }
-
-    // 3. 更新计数
-    m_employeeCount--;
-
-    // 4. 重置选中状态
-    m_currentSelectedRow = -1;
-
-    // 5. 更新显示
-    updateEmployeeTable();
-
-    qDebug() << "删除职工成功，当前总数：" << m_employeeCount;
 }
 
 
-
-//工资按钮
 void MainWindow::on_SalaryButton_clicked()
 {
     if (m_currentSelectedRow < 0 || m_currentSelectedRow >= m_employeeCount) {
-            QMessageBox::warning(this, "警告", "请先选择一个职工");
-            return;
-        }
+        QMessageBox::warning(this, "警告", "请先选择一个职工以管理其工资");
+        return;
+    }
 
-        Employee* selectedEmployee = m_employees[m_currentSelectedRow];
+    Employee* selectedEmployee = m_employees[m_currentSelectedRow];
 
-        if (!salaryWin) {  // 只在第一次创建
-            salaryWin = new SalaryWindow(selectedEmployee);
-            salaryWin->setAttribute(Qt::WA_DeleteOnClose);
-            salaryWin->setWindowModality(Qt::ApplicationModal);
+    // 创建一个【全新的】SalaryWindow实例
+    SalaryWindow *salaryWindow = new SalaryWindow(selectedEmployee, this);
+    salaryWindow->setAttribute(Qt::WA_DeleteOnClose);
 
-            // 窗口关闭时，把指针设为 nullptr
-            connect(salaryWin, &QObject::destroyed, this, [this]() {
-                salaryWin = nullptr;
-            });
-        }
-        salaryWin->show();
-        salaryWin->raise();
-        salaryWin->activateWindow();
+    // 设置为模态，弹出后会显示在MainWindow前面，并且MainWindow不能动
+    salaryWindow->setWindowModality(Qt::ApplicationModal);
+    salaryWindow->show();
 }
-
-
