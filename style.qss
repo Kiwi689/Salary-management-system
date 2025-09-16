@@ -5,6 +5,7 @@ QWidget {
     color: #222; /* 字体颜色稍微加深，增加对比度 */
 }
 
+
 /* ==================== 窗口背景 ==================== */
 /* 为主窗口设置一个非常淡的蓝色背景 */
 QMainWindow#MainWindow {
@@ -173,4 +174,47 @@ QPushButton#saveChangesButton {
 }
 QPushButton#saveChangesButton:hover {
     background-color: #218838;
+}
+
+/* ==================== 欢迎/占位页 ==================== */
+QWidget#welcomePage {
+    background-color: #ffffff;
+    border-left: 1px solid #d0e0ff;
+}
+
+QLabel#welcomeText {
+    font-size: 14pt;
+    color: #a0a0a0;
+    font-weight: bold;
+}
+
+/*=======================登录背景=========================*/
+QWidget#loginBackground {
+    /* 确保图片路径与您在.qrc文件中设置的路径完全一致 */
+    border-image: url(:/background.png);
+}
+
+/* 登录页面的按钮 (淡蓝色主题) */
+#loginPanel QPushButton#primaryButton {
+    min-height: 45px;
+    font-size: 14pt;
+    font-weight: bold;
+    color: white; /* 文字颜色为白色 */
+    border-radius: 8px;
+    border: 1px solid #5a98d6; /* 一个匹配的、稍深的蓝色边框 */
+
+    /* 【核心】使用qlineargradient创建从上到下的淡蓝色渐变效果 */
+    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                      stop:0 #85d7ff, stop:1 #5a98d6);
+}
+
+/* 鼠标悬停在按钮上时的样式 */
+#loginPanel QPushButton#primaryButton:hover {
+    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                      stop:0 #95e7ff, stop:1 #6aa8e6); /* 悬停时颜色稍微变亮 */
+}
+
+/* 鼠标按下按钮时的样式 */
+#loginPanel QPushButton#primaryButton:pressed {
+    background-color: #5a98d6; /* 按下时变为较深的纯色，提供反馈 */
 }
