@@ -117,3 +117,60 @@ QTableWidget::item:selected {
     background-color: #b3d9ff; /* 【核心】配套的蓝色系选中颜色 */
     color: #000;
 }
+
+/* ==================== 详情面板样式 ==================== */
+QWidget#detailsPanel {
+    background-color: #ffffff;
+    border-left: 1px solid #d0e0ff;
+}
+
+QLabel#avatarLabel {
+    border: 3px solid #e0f0ff;
+    border-radius: 8px; /* 【优化】从圆形改为带圆角的方形 */
+    background-color: #f5faff;
+    padding: 3px;
+}
+
+/* 详情面板中的表单标签 */
+.QFormLayout QLabel {
+    font-weight: bold;
+    color: #005a9e;
+    padding-top: 5px;
+}
+
+QDateEdit, QTextEdit {
+    border: 1px solid #c0d0e0;
+    border-radius: 4px;
+    padding: 5px;
+    background-color: #fdfefe;
+    min-height: 32px;
+}
+
+QDateEdit:focus, QTextEdit:focus {
+    border-color: #0078d7;
+}
+
+/* 【优化】按钮对象名已更改 */
+QPushButton#changePictureButton {
+    background: transparent;
+    border: none;
+    color: #0078d7;
+    text-decoration: underline;
+    padding: 5px;
+}
+QPushButton#changePictureButton:hover {
+    color: #005a9e;
+}
+
+QPushButton#saveChangesButton {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    min-height: 40px;
+    padding: 0 20px;
+}
+QPushButton#saveChangesButton:hover {
+    background-color: #218838;
+}
